@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Planificador de Tareas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+        }
+        .register-container {
+            max-width: 400px;
+            margin: 50px auto;
+            display: none;
+        }
+        .app-container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            display: none;
+        }
+        h1 {
+            color: #0d6efd;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .calendar-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .day-circle {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            border-radius: 50%;
+            text-align: center;
+            font-weight: bold;
+            background: transparent;
+            cursor: pointer;
+        }
+        .day-today .day-circle {
+            background: #fff3cd !important;
+            color: #856404;
+        }
+        .day-hasevent .day-circle {
+            background: #d1ecff;
+            color: #0c5460;
+        }
+        .event-item {
+            background: #e7f3ff;
+            border-left: 4px solid #0d6efd;
+            padding: 6px 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            cursor: pointer;
+            position: relative;
+        }
+        .event-item.done {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        .event-circle {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #0d6efd;
+            margin-right: 8px;
+        }
+        .btn-add-event {
+            background: #0d6efd;
+            border: none;
+        }
+        .form-add-event {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+        #logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .event-options {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .event-item:hover .event-options {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div id="login" class="login-container">
+    <div class="card shadow">
+        <div class="card-body p-5">
+            <h3 class="text-center mb-4">Mi Planificador</h3>
+            <input type="text" id="login-username" class="form-control mb-3" placeholder="Usuario">
+            <input type="password" id="login-password" class="form-control mb-4" placeholder="Contraseña">
+            <button onclick="doLogin()" class="btn btn-primary w-100 mb-2">Iniciar Sesión</button>
+            <button onclick="showRegister()" class="btn btn-outline-primary w-100">Registrarse</button>
+            <p class="text-danger text-center mt-3" id="login-message"></p>
+        </div>
+    </div>
+</div>
+
+<div id="register" class="register-container">
+    <div class="card shadow">
+        <div class="card-body p-5">
+            <h3 class="text-center mb-4">Registro</h3>
+            <input type="text" id="reg-username" class="form-control mb-3" placeholder="Usuario">
+            <input type="password" id="reg-password" class="form-control mb-4" placeholder="Contraseña">
+            <button onclick="doRegister()" class="btn btn-primary w-100 mb-2">Registrar</button>
+            <button onclick="showLogin()" class="btn btn-outline-primary w-100">Volver a Iniciar Sesión</button>
+            <p class="text-danger text-center mt-3" id="reg-message"></p>
+        </div>
+    </div>
+</div>
+
+<div id="app" class="app-container">
+    <button id="logout-btn" class="btn btn-outline-danger btn-sm" onclick="logout()">Cerrar sesión</button>
+    
+    <h1>¡Hola, <span id="welcome-user"></span>! 📚</h1>
+
+    <div class="calendar-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 id="current-month" class="mb-0"></h3>
+            <div>
+                <button class="btn btn-outline-primary me-2" onclick="prevMonth()" id="prev-btn">◄</button>
+                <button class="btn btn-outline-primary" onclick="nextMonth()">►</button>
+            </div>
+        </div>
+
+        <table class="table table-bordered text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+                </tr>
+            </thead>
+            <tbody id="calendar-body"></tbody>
+        </table>
+    </div>
+
+    <div class="form-add-event">
+        <h4>➕ Agregar nueva tarea</h4>
+        <div class="row">
+            <div class="col-md-5">
+                <label>Fecha</label>
+                <input type="date" id="event-date" class="form-control">
+            </div>
+            <div class="col-md-5">
+                <label>Descripción de la tarea</label>
+                <input type="text" id="event-desc" class="form-control" placeholder="Ej: Entregar proyecto de Matemáticas">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button onclick="addEvent()" class="btn btn-primary w-100 btn-add-event">Agregar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentUser = null;
+    let currentDate = new Date(2025, 11, 15); // Diciembre 2025
+    const minDate = new Date(2025, 10, 1); // Noviembre 2025 (un mes antes)
+    let events = {};
+
+    function showRegister() {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('register').style.display = 'block';
+    }
+
+    function showLogin() {
+        document.getElementById('register').style.display = 'none';
+        document.getElementById('login').style.display = 'block';
+    }
+
+    function doRegister() {
+        const username = document.getElementById('reg-username').value.trim();
+        const password = document.getElementById('reg-password').value;
+        if (username && password) {
+            if (localStorage.getItem(username)) {
+                document.getElementById('reg-message').textContent = 'Usuario ya existe';
+            } else {
+                localStorage.setItem(username, password);
+                document.getElementById('reg-message').textContent = 'Registro exitoso. Ahora inicia sesión.';
+                showLogin();
+            }
+        }
+    }
+
+    function doLogin() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        if (username && password) {
+            const storedPass = localStorage.getItem(username);
+            if (storedPass) {
+                if (storedPass === password) {
+                    currentUser = username;
+                    loadEvents();
+                    document.getElementById('login').style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    document.getElementById('welcome-user').textContent = username;
+                    renderCalendar();
+                } else {
+                    document.getElementById('login-message').textContent = 'Contraseña incorrecta';
+                }
+            } else {
+                document.getElementById('login-message').textContent = 'Usuario no encontrado';
+            }
+        }
+    }
+
+    function logout() {
+        saveEvents();
+        currentUser = null;
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('login').style.display = 'block';
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+    }
+
+    function loadEvents() {
+        const data = localStorage.getItem(currentUser + '_events');
+        events = data ? JSON.parse(data) : {};
+    }
+
+    function saveEvents() {
+        localStorage.setItem(currentUser + '_events', JSON.stringify(events));
+    }
+
+    function renderCalendar() {
+        const month = currentDate.getMonth();
+        const year = currentDate.getFullYear();
+        document.getElementById('current-month').textContent = 
+            currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+
+        document.getElementById('prev-btn').disabled = currentDate <= minDate;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date(2025, 11, 15); // Fecha actual fija
+
+        const tbody = document.getElementById('calendar-body');
+        tbody.innerHTML = '';
+
+        let date = 1;
+        for (let i = 0; i < 6; i++) {
+            const row = document.createElement('tr');
+            for (let j = 0; j < 7; j++) {
+                const cell = document.createElement('td');
+                cell.style.verticalAlign = 'top';
+                cell.style.height = '120px';
+                cell.style.padding = '8px';
+
+                if (i === 0 && j < firstDay || date > daysInMonth) {
+                    cell.innerHTML = '&nbsp;';
+                } else {
+                    const key = `${year}-${String(month + 1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+                    const isToday = date === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+                    const hasEvents = events[key] && events[key].length > 0;
+
+                    cell.className = isToday ? 'day-today' : (hasEvents ? 'day-hasevent' : '');
+                    
+                    cell.innerHTML = `<div class="day-circle">${date}</div>`;
+                    
+                    if (events[key]) {
+                        const maxShow = 3;
+                        events[key].forEach((ev, idx) => {
+                            const div = document.createElement('div');
+                            div.className = 'event-item ' + (ev.done ? 'done' : '');
+                            div.innerHTML = `<span class="event-circle"></span>${ev.desc}`;
+                            div.onclick = () => showEventOptions(key, idx, div);
+                            cell.appendChild(div);
+                        });
+                        if (events[key].length > maxShow) {
+                            const more = document.createElement('div');
+                            more.className = 'event-item text-muted';
+                            more.textContent = `+${events[key].length - maxShow} más...`;
+                            cell.appendChild(more);
+                        }
+                    }
+                    date++;
+                }
+                row.appendChild(cell);
+            }
+            tbody.appendChild(row);
+            if (date > daysInMonth) break;
+        }
+    }
+
+    function addEvent() {
+        const date = document.getElementById('event-date').value;
+        const desc = document.getElementById('event-desc').value.trim();
+        if (date && desc) {
+            if (!events[date]) events[date] = [];
+            events[date].push({desc: desc, done: false});
+            saveEvents();
+            renderCalendar();
+            document.getElementById('event-desc').value = '';
+        }
+    }
+
+    function showEventOptions(key, idx, element) {
+        // Cerrar opciones abiertas
+        document.querySelectorAll('.event-options').forEach(el => el.remove());
+
+        const options = document.createElement('div');
+        options.className = 'event-options';
+        options.innerHTML = `
+            <button class="btn btn-sm btn-success mb-1 w-100" onclick="markDone('${key}', ${idx})">Marcar como hecha</button>
+            <button class="btn btn-sm btn-warning w-100" onclick="reschedule('${key}', ${idx})">Reagendar</button>
+        `;
+        element.appendChild(options);
+    }
+
+    function markDone(key, idx) {
+        events[key][idx].done = true;
+        saveEvents();
+        renderCalendar();
+    }
+
+    function reschedule(key, idx) {
+        const newDate = prompt('Nueva fecha (YYYY-MM-DD):');
+        if (newDate) {
+            const ev = events[key].splice(idx, 1)[0];
+            if (!events[newDate]) events[newDate] = [];
+            events[newDate].push(ev);
+            if (events[key].length === 0) delete events[key];
+            saveEvents();
+            renderCalendar();
+        }
+    }
+
+    function prevMonth() {
+        const newMonth = new Date(currentDate);
+        newMonth.setMonth(currentDate.getMonth() - 1);
+        if (newMonth >= minDate) {
+            currentDate = newMonth;
+            renderCalendar();
+        }
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    }
+
+    // Iniciar
+    renderCalendar();
+</script>
+
+</body>
+</html>
+
